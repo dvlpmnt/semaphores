@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 
 /// to be finished
 
-void update_graph(int semid_q, int k)	// k = 0,1
+void update_graph(int semid_q, int k, int val)	// k = 0,1
 {
 	int i, j, temp;
 	int A[2][10];
@@ -93,7 +93,7 @@ void update_graph(int semid_q, int k)	// k = 0,1
 	}
 	fclose(fp);
 	int ret = semctl(semid_q, 1, GETVAL, 0);
-	
+	A[k][producer_num-1] = val;	
 	FILE *fp = fopen("matrix.txt", "w");
 	for (j = 0; j < 2; j++)
 	{

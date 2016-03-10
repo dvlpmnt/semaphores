@@ -81,3 +81,41 @@ int main(int argc, char *argv[])
 	// getchar();
 	return 0;
 }
+
+void update_graph(int semid_q, int k, int val)	// k = 0,1
+{
+	int i, j, temp;
+	int A[2][10];
+
+	sop.sem_num = 0;
+	sop.sem_op = -1;
+	sop.sem_flg = 0;
+	semop(semid_q, &sop, 1);
+	
+	FILE *fp = fopen("matrix.txt", "r");
+	for (j = 0; j < 2; j++)
+	{
+		for (i = 0; i < 10; i++)
+		{
+			fscanf(fp, "%d", &A[j][i]);
+		}
+	}
+	fclose(fp);
+	int ret = semctl(semid_q, 1, GETVAL, 0);
+	A[k][5 + consumer_num - 1] = val;	
+	FILE *fp = fopen("matrix.txt", "w");
+	for (j = 0; j < 2; j++)
+	{
+		for (i = 0; i < 10; i++)
+		{
+			fprintf(fp, "%d ", &[j][i]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
+
+	sop.sem_num = 0;
+	sop.sem_op = 1;
+	sop.sem_flg = 0;
+	semop(semid_q, &sop, 1);
+}
