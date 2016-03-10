@@ -121,8 +121,7 @@ int main()
 		sleep(2);
 		read_graph(semid_file);
 	}
-	while(DFSCheckCycle() != 1);
-	sleep(20);
+	while(DFSCheckCycle() == 0);
 	for(i=0;i<10;i++)
 		kill(procs[i], SIGINT);
 	return 0;

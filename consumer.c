@@ -18,7 +18,7 @@ struct sembuf sop;
 
 int msglen = 10000;
 int consumer_num;
-int probability;
+int probability = 50;
 struct msqid_ds qstat;
 
 void update_matrix(int semid_q, int k, int val);
@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	consumer_num = atoi(argv[1]);
 	int msgid, msgid_q1, msgid_q2;
 	int curr, curr_sema, next, next_sema, status;
-	key_t key_sem = 1234;
+
 	key_t key_msg = 1025;
 	key_t key_q1 = 2025;
 	key_t key_q2 = 3025;
@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 				update_matrix(semid_file, next != msgid_q1, 0);
 			}
 		}
-		sleep(rand()%5);	
+		sleep(rand()%2);	
 	}
 	// getchar();
 	return 0;

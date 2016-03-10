@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 			}
 
 		}
-		sleep(rand()%5);
+		sleep(rand()%2);
 	}
 	getchar();
 	return 0;
