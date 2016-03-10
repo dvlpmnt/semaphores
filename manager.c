@@ -1,7 +1,9 @@
+#include <sys/sem.h> 
 #include <sys/msg.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/ipc.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <unistd.h>
@@ -14,19 +16,14 @@ struct message
 	char mtext[10000];
 } msg;
 
-struct sembuf
-{
-	ushort sem_num;
-	short	 sem_op;
-	short sem_flg;
-} sop;
+struct sembuf sop;
 
 int msglen = 10000;
 
-void read_graph(int semid_file);
-void DFSCheckCycle ();
-void Visit(int p[], int u,int color[]);
 void PrintCycle(int p[], int v, int u);
+int Visit(int p[], int u,int color[]);
+int DFSCheckCycle ();
+void read_graph(int semid_file);
 
 int main()
 {
@@ -67,24 +64,20 @@ int main()
 	key_t key_sem_q2 = 3523;
 	int semid_file, semid_q1, semid_q2;
 	semid_file = semget(key_sem_file, 1, IPC_CREAT | 0666);	// 1 subsemaphore
-	semid_q1 = semget(key_sem_q1, 2, IPC_CREAT | 0666);	// 2 subsemaphores
-	semid_q2 = semget(key_sem_q2, 2, IPC_CREAT | 0666);	// 2 subsemaphores
+	semid_q1 = semget(key_sem_q1, 1, IPC_CREAT | 0666);	// 1 subsemaphores
+	semid_q2 = semget(key_sem_q2, 1, IPC_CREAT | 0666);	// 1 subsemaphores
 	semctl(semid_file, 0, IPC_RMID, 0);
 	semctl(semid_q1, 0, IPC_RMID, 0);
 	semctl(semid_q2, 0, IPC_RMID, 0);
 	semid_file = semget(key_sem_file, 1, IPC_CREAT | 0666);	// 1 subsemaphore
-	semid_q1 = semget(key_sem_q1, 2, IPC_CREAT | 0666);	// 2 subsemaphores
-	semid_q2 = semget(key_sem_q2, 2, IPC_CREAT | 0666);	// 2 subsemaphores
+	semid_q1 = semget(key_sem_q1, 1, IPC_CREAT | 0666);	// 1 subsemaphores
+	semid_q2 = semget(key_sem_q2, 1, IPC_CREAT | 0666);	// 1 subsemaphores
 	semctl(semid_file, 0, SETVAL, 1);	// Mutex for file
 	semctl(semid_q2, 0, SETVAL, 1);		// Mutex for Locking Queue1
-	semctl(semid_q2, 1, SETVAL, 0);		// Count for Queue1
+	// semctl(semid_q2, 1, SETVAL, 0);		// Count for Queue1
 	semctl(semid_q1, 0, SETVAL, 1);		// Mutex for Locking Queue2
-	semctl(semid_q1, 1, SETVAL, 0);		// Count for Queue2
-	if (semid < 0)
-	{
-		perror("Semaphore creation failed\n");
-	}
-
+	// semctl(semid_q1, 1, SETVAL, 0);		// Count for Queue2
+	
 	FILE *fp = fopen("matrix.txt", "w+");
 	for (j = 0; j < 2; j++)
 	{
@@ -145,6 +138,7 @@ void read_graph(int semid_file)
 	semop(semid_file, &sop, 1);
 
 	FILE *fp = fopen("matrix.txt", "r");
+	printf("\n--------------------Matrix--------------------\n");
 	for (j = 0; j < 2; j++)
 	{
 		for (i = 0; i < 10; i++)
@@ -154,7 +148,9 @@ void read_graph(int semid_file)
 				graph[i][j+10] = 1;
 			if (temp == 2)
 				graph[j+10][i] = 1;
+			printf("%4d",temp );
 		}
+		printf("\n\n");
 	}
 	fclose(fp);
 
@@ -163,17 +159,17 @@ void read_graph(int semid_file)
 	sop.sem_flg = 0;
 	semop(semid_file, &sop, 1);
 
-	for (j = 0; j < 12; j++)
-	{
-		for (i = 0; i < 12; i++)
-		{
-			printf("%4d", graph[j][i]);
-		}
-		printf("\n\n");
-	}
+	// for (j = 0; j < 12; j++)
+	// {
+	// 	for (i = 0; i < 12; i++)
+	// 	{
+	// 		printf("%4d", graph[j][i]);
+	// 	}
+	// 	printf("\n\n");
+	// }
 }
 
-void DFSCheckCycle ()
+int DFSCheckCycle ()
 {
     int p[12],color[12];
     int i,j;
@@ -222,6 +218,7 @@ int Visit(int p[], int u,int color[])
 
 void PrintCycle(int p[], int v, int u) 
 {
+	printf("\n\n\tCycle Detected!\n\n");
     do {
         printf(" %2d ->", u);
         u = p[u];
