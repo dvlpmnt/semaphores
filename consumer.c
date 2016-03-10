@@ -19,14 +19,21 @@ struct sembuf sop;
 int msglen = 10000;
 int consumer_num;
 int probability = 50;
+int isDeadlock = 0;
 struct msqid_ds qstat;
 
 void update_matrix(int semid_q, int k, int val);
 
 int main(int argc, char *argv[])
 {
+	printf("%s\n",argv[2] );
+	if(strcmp(argv[2],"with") == 0)
+	{
+		isDeadlock = 1;
+	}
+	probability = atoi(argv[3]);
 	consumer_num = atoi(argv[1]);
-	int msgid, msgid_q1, msgid_q2;
+	int msgid, msgid_q1, msgid_q2, temp1;
 	int curr, curr_sema, next, next_sema, status;
 
 	key_t key_msg = 1025;
@@ -36,13 +43,17 @@ int main(int argc, char *argv[])
     msgid_q1 = msgget(key_q1,IPC_CREAT|0644);	
     msgid_q2 = msgget(key_q2,IPC_CREAT|0644);	
 	
+	
 	key_t key_sem_file = 1523;
 	key_t key_sem_q1 = 2523;
 	key_t key_sem_q2 = 3523;
-	int semid_file, semid_q1, semid_q2;
+	key_t key_sem_remove = 5523;
+	int semid_file, semid_q1, semid_q2, semid_insert, semid_remove;
+	
 	semid_file = semget(key_sem_file, 1, IPC_CREAT | 0666);	// 1 subsemaphore
-	semid_q1 = semget(key_sem_q1, 1, IPC_CREAT | 0666);	// 1 subsemaphores
-	semid_q2 = semget(key_sem_q2, 1, IPC_CREAT | 0666);	// 1 subsemaphores
+	semid_q1 = semget(key_sem_q1, 1, IPC_CREAT | 0666);		// 1 subsemaphores
+	semid_q2 = semget(key_sem_q2, 1, IPC_CREAT | 0666);		// 1 subsemaphores
+	semid_remove = semget(key_sem_remove, 1, IPC_CREAT | 0666);	// 1 subsemaphores
 
 	memset(msg.mtext,'\0',msglen);
 	sprintf(msg.mtext,"%d",getpid());
@@ -75,22 +86,36 @@ int main(int argc, char *argv[])
 				semop(curr_sema, &sop, 1);
 		
 				update_matrix(semid_file, curr != msgid_q1, 2);
-
+				
+				memset(msg.mtext,'\0',msglen);
 				status = msgrcv(curr, &msg, msglen, 500, 0);
-	    			
+	    		printf("Consumer%d, Consumed %s from Queue%d.\n",consumer_num,msg.mtext,curr==msgid_q2 + 1);	
 	    		sop.sem_num = 0;
 				sop.sem_op = 1;
 				sop.sem_flg = 0;
 				semop(curr_sema, &sop, 1);
 
 				update_matrix(semid_file, curr != msgid_q1, 0);
-			
+				
+				sop.sem_num = 0;
+				sop.sem_op = 1;
+				sop.sem_flg = 0;
+				semop(semid_remove, &sop, 1);
+				
 			}
 				
 		}
 		else	//read from both queues
 		{
-			if(rand()%2)	// read from q1 first then from q2
+			if(isDeadlock == 0)
+			{
+				temp1 = 1;
+			}
+			else
+			{
+				temp1 = rand()%2;
+			}
+			if( temp1 == 1)	// read from q1 first then from q2
 			{
 				curr = msgid_q1;
 				curr_sema = semid_q1;
@@ -126,6 +151,11 @@ int main(int argc, char *argv[])
 
 				update_matrix(semid_file, curr != msgid_q1, 1);
 
+				sop.sem_num = 0;
+				sop.sem_op = 1;
+				sop.sem_flg = 0;
+				semop(semid_remove, &sop, 1);
+
 			}
 			msgctl(next,IPC_STAT,&qstat);
 			if(qstat.msg_qnum > 0)
@@ -149,6 +179,11 @@ int main(int argc, char *argv[])
 				semop(next_sema, &sop, 1);
 
 				update_matrix(semid_file, next != msgid_q1, 0);
+
+				sop.sem_num = 0;
+				sop.sem_op = 1;
+				sop.sem_flg = 0;
+				semop(semid_remove, &sop, 1);
 			}
 		}
 		sleep(rand()%2);	

@@ -38,10 +38,13 @@ int main(int argc, char *argv[])
 	key_t key_sem_file = 1523;
 	key_t key_sem_q1 = 2523;
 	key_t key_sem_q2 = 3523;
-	int semid_file, semid_q1, semid_q2;
+	key_t key_sem_insert = 4523;
+	int semid_file, semid_q1, semid_q2, semid_insert;
+	
 	semid_file = semget(key_sem_file, 1, IPC_CREAT | 0666);	// 1 subsemaphore
 	semid_q1 = semget(key_sem_q1, 1, IPC_CREAT | 0666);	// 1 subsemaphores
 	semid_q2 = semget(key_sem_q2, 1, IPC_CREAT | 0666);	// 1 subsemaphores
+	semid_insert = semget(key_sem_insert, 1, IPC_CREAT | 0666);	// 1 subsemaphores
 
 	memset(msg.mtext,'\0',msglen);
 	sprintf(msg.mtext,"%d",getpid());
@@ -77,6 +80,12 @@ int main(int argc, char *argv[])
 				update_matrix(semid_file, 0, 0);
 
 				printf("Producer%d, Successfully inserted.\n", producer_num);
+				
+				sop.sem_num = 0;
+				sop.sem_op = 1;
+				sop.sem_flg = 0;
+				semop(semid_insert, &sop, 1);
+
 				printf("%d messages\n",(int)qstat.msg_qnum);
 			}
 
@@ -111,6 +120,12 @@ int main(int argc, char *argv[])
 				update_matrix(semid_file, 1, 0);
 
 				printf("%d , Successfully inserted.\n", getpid());
+				
+				sop.sem_num = 0;
+				sop.sem_op = 1;
+				sop.sem_flg = 0;
+				semop(semid_insert, &sop, 1);
+				
 				printf("%d messages\n",(int)qstat.msg_qnum);
 			}
 
