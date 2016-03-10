@@ -20,7 +20,6 @@ int main(int argc, char *argv[])
 	srand(time(NULL));
 	int pid = getpid(), msgid, msgid_q1, msgid_q2;
 	printf("PID %d\n", pid);
-	key_t key_sem = 1234;
 	key_t key_msg = 1025;
 	key_t key_q1 = 2025;
 	key_t key_q2 = 3025;
@@ -68,12 +67,46 @@ int main(int argc, char *argv[])
 		}
 		sleep(rand()%10 + 1);
 	}
-	// int nsems = 20, semid;
-	// semid = semget(key_sem, nsems, IPC_CREAT | 0666);
-	// if (semid < 0)
-	// {
-	// 	perror("Semaphore creation failed\n");
-	// }
 	getchar();
 	return 0;
+}
+
+/// to be finished
+
+void update_graph(int semid_q, int k)	// k = 0,1
+{
+	int i, j, temp;
+	int A[2][10];
+
+	sop.sem_num = 0;
+	sop.sem_op = -1;
+	sop.sem_flg = 0;
+	semop(semid_q, &sop, 1);
+	
+	FILE *fp = fopen("matrix.txt", "r");
+	for (j = 0; j < 2; j++)
+	{
+		for (i = 0; i < 10; i++)
+		{
+			fscanf(fp, "%d", &A[j][i]);
+		}
+	}
+	fclose(fp);
+	int ret = semctl(semid_q, 1, GETVAL, 0);
+	
+	FILE *fp = fopen("matrix.txt", "w");
+	for (j = 0; j < 2; j++)
+	{
+		for (i = 0; i < 10; i++)
+		{
+			fprintf(fp, "%d ", &[j][i]);
+		}
+		fprintf(fp, "\n");
+	}
+	fclose(fp);
+
+	sop.sem_num = 0;
+	sop.sem_op = 1;
+	sop.sem_flg = 0;
+	semop(semid_q, &sop, 1);
 }
