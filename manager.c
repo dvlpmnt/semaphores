@@ -1,20 +1,51 @@
+#include <sys/msg.h>
+#include <sys/types.h>
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <signal.h>
 #include <unistd.h>
 
-int graph[10][10] = {0};
-int done = 0;
+int graph[2][10] = {0};
+
+struct message
+{
+	long mtype;
+	char mtext[10000];
+} msg;
+
+int msglen = 10000;
 
 void read_graph( );
-void DFSCheckCycle( );
-void Visit(int p[], int u, int color[]);
-void PrintCycle(int p[], int v, int u);
-
+int CheckCycle();
 int main()
 {
-	int i, j;
-	pid_t p, p1, p2;
+	int i, j, msgid, msgid_q1, msgid_q2, status;
 	char pRun[100] = {"./p"};
 	char cRun[100] = {"./c"};
+	pid_t procs[10], p ,p1, p2;
+	/*
+		Queue to get PIDs of producers/consumers
+	*/
+    key_t key = 1025;
+    msgid = msgget(key,IPC_CREAT|0644);	
+	msgctl(msgid_q1, IPC_RMID, NULL);	// remove already existing queue
+    msgid = msgget(key,IPC_CREAT|0644);	// recreate a queue which is empty
+	/*
+		Queue1 for producers
+	*/
+    key_t key_q1 = 2025;
+    msgid_q1 = msgget(key_q1,IPC_CREAT|0644);
+	msgctl(msgid_q1, IPC_RMID, NULL);	// remove already existing queue
+    msgid_q1 = msgget(key_q1,IPC_CREAT|0644);
+	/*
+		Queue2 for producers
+	*/
+    key_t key_q2 = 3025;
+    msgid_q2 = msgget(key_q2,IPC_CREAT|0644);
+	msgctl(msgid_q2, IPC_RMID, NULL);	// remove already existing queue
+    msgid_q2 = msgget(key_q2,IPC_CREAT|0644);
+
 	FILE *fp = fopen("matrix.txt", "w+");
 	for (j = 0; j < 2; j++)
 	{
@@ -25,35 +56,43 @@ int main()
 		fprintf(fp, "\n");
 	}
 	fclose(fp);
-	sleep(3);
-	printf("yo\n");
-	p = fork();
-	if (p == 0)
+	char temp[50];
+	for (i = 0; i < 5; i++)
 	{
-		for (i = 0; i < 5; i++)
+		p1 = fork();
+		if (p1 == 0)
 		{
-			p1 = fork();
-			if (p1 == 0)
-			{
-				execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "bash", "-c", pRun, (void*)NULL);
-			}
-			p2 = fork();
-			if (p2 == 0)
-			{
-				execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "bash", "-c", cRun, (void*)NULL);
-			}
-			sleep(1);
+			memset(temp,'\0',50);
+			sprintf(temp, "./p %d",i + 1);
+			execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "bash", "-c", temp , (void*)NULL);
 		}
+		else
+			{
+				p2 = fork();
+				if (p2 == 0)
+				{
+				memset(temp,'\0',50);
+				sprintf(temp, "./c %d",i + 1);
+				execl("/usr/bin/xterm", "/usr/bin/xterm", "-e", "bash", "-c", temp, (void*)NULL);
+				}
+			}
 	}
-	else
+    for(i=0;i<10;i++)
+    {
+    	memset(msg.mtext,'\0',msglen);
+    	status = msgrcv(msgid, &msg, msglen, 200, 0);
+    	procs[i] = atoi(msg.mtext);
+    	printf("\t%d\n",(int)procs[i] );
+    }
+	do
 	{
-		while (1)
-		{
-			read_graph();
-			DFSCheckCycle();
-			sleep(1);
-		}
+		sleep(2);
+		read_graph();
 	}
+	while(CheckCycle()!=1);
+	sleep(20);
+	for(i=0;i<10;i++)
+		kill(procs[i], SIGINT);
 	return 0;
 }
 
@@ -65,7 +104,7 @@ void read_graph()
 	{
 		for (i = 0; i < 10; i++)
 		{
-			fscanf(fp, "%d ", &temp);
+			fscanf(fp, "%d", &temp);
 			if (temp == 1)
 				graph[j][i] = 1;
 			if (temp == 2)
@@ -83,56 +122,15 @@ void read_graph()
 	fclose(fp);
 }
 
-void DFSCheckCycle ()
+int CheckCycle()
 {
-	int p[10], color[10];
-	int i, j;
-	for (j = 0; j < 10; j++)
-	{
-		p[j] = -2;
-		color[j] = 0;
-	}
-
-	for (i = 0; i < 10; i++)
-	{
-		if (color[i] == 0) {
-			p[i] = -1; // meaning it is a root of a DFS-tree of the DFS forest
-			Visit(p, i, color);
-		}
-	}
-}
-
-void Visit(int p[], int u, int color[])
-{
-	int cycle = 0, v ;
-	color[u] = 1;
-	for (v = 0; v < 10; v++)
-		if (graph[u][v] == 1)
+	/**
+		pi -> qk -> pj -> ql ->pi
+	*/
+	int i, j, k, l, m, n;
+	for(i=0;i<10;i++)
 		{
-			if (color[v] == 0) {
-				p[v] = u;
-				Visit(p, v, color);
-			}
-			else if (color[v] == 1)
-			{
-				cycle = 1;
-				break;
-			}
+			
 		}
-	color[u] = 2; // once DFS for this vertex ends, assign its color to black
-
-	if (cycle == 1)	//there is a cycle
-		PrintCycle(p, v, u);
-}
-
-void PrintCycle(int p[], int v, int u)
-{
-	do {
-		printf(" %2d ->", u);
-		u = p[u];
-		if (u == -1)
-		{
-			break;
-		}
-	} while (u != v);
+	return 1;
 }
