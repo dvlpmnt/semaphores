@@ -1,10 +1,13 @@
-all: reset producer manager consumer
+all: rmq reset producer manager consumer
 
 producer:
 	cc producer.c -o p
 
 reset:
 	reset
+
+rmq:
+	ipcrm -a
 
 manager:
 	cc manager.c -o m
