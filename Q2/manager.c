@@ -12,146 +12,20 @@
 #define val 25
 #define trainCount 50
 
-int nodes[val + 50][4];
-
+int nodes[val + 50][4], source1, dest1;
 int temp[val + 50][val + 50], visited[val + 50], parents[val + 50], recstack[val + 50];
-int source1, dest1;
-pid_t trainPid[101];
-
 int currentNodes[75];
 int instack[75];
 int countCurr = 0;
 int cycle = 0;
-void drawGraph() {
-	int i, j;
-	memset(temp, 0, sizeof(temp));
-	memset(visited, 0, sizeof(visited));
-	memset(parents, 0, sizeof(parents));
-	memset(recstack, 0, sizeof(recstack));
-	for (i = 0; i < trainCount; i++) {
-		for (j = 0; j < 4; j++) {
-			if (nodes[i][j] == 1) {
-				temp[i][j + trainCount] = 1;
-			}
-			if (nodes[i][j] == 2) {
-				temp[j + trainCount][i] = 1;
-			}
-		}
-	}
-	// for (i = 0; i < trainCount + 4; i++) {
-	// 	for (j = 0; j < trainCount + 4; j++) {
-	// 		int u = i;
-	// 		int v = j;
-	// 		if (temp[i][j] == 1) {
-	// 			printf("Edge -> (%d,%d)\n", i, j);
-	// 			if (u >= trainCount) {
-	// 				printf("Resource->%d ---->> TrainId->%d\n", u - trainCount, v);
-	// 			}
-	// 			else if (v >= trainCount) {
-	// 				printf("Train->%d ---->> Resource->%d\n", u, v - trainCount);
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	for (i = 0; i < trainCount + 4; i++) {
-		temp[i][0] = 0;
-		temp[0][i] = 0;
-	}
-}
-
-void DFS(int u, int p) {
-	visited[u] = 1;
-	int i, j, k;
-	countCurr++;
-	instack[u] = 1;
-	if (cycle) {
-		return ;
-	}
-	currentNodes[countCurr] = u;
-	for (i = 0; i < 75; i++) {
-		if (temp[u][i] == 1 && !visited[i] && i != p) {
-			DFS(i, u);
-		}
-		else {
-			if (cycle) {
-				return ;
-			}
-			if (visited[i] && temp[u][i] && instack[i]) {
-				int start = u;
-				int end = i;
-				printf("\nSystem Deadlocked\n");
-				int trainList[100];
-				int index1 = 0;
-				while (1) {
-					int index = currentNodes[countCurr];
-					if (index >= trainCount) {
-						// printf("Resource->%d\n", index - trainCount);
-					}
-					else {
-						trainList[index1] = index;
-						index1++;
-						// printf("Train->%d\n", index);
-					}
-					if (countCurr == 0 || currentNodes[countCurr] == end) {
-						break;
-					}
-					countCurr--;
-					cycle = 1;
-				}
-
-				// printf("Train list of dependecies->\n");
-				int l = 0;
-				for (l = 0; l < index1 - 1; l++) {
-					printf("Train <%d> is waiting on Train <%d> ---------> ", trainPid[trainList[l % index1] - 1], trainPid[trainList[(l + 1) % index1] - 1]);
-				}
-				printf("Train <%d> is waiting on Train <%d>\n", trainPid[trainList[l % index1] - 1], trainPid[trainList[(l + 1) % index1] - 1]);
-			}
-		}
-	}
-	instack[u] = 0;
-	countCurr--;
-}
-
 int fft = 0;
-int checkCycle() {
-	drawGraph();
-	memset(visited, 0, sizeof(visited));
-	memset(instack, 0, sizeof(instack));
-	int i = 0;
-	for (i = 1; i <= 74; i++) {
-		if (!visited[i]) {
-			DFS(i, 0);
-			countCurr = 0;
-			if (cycle) {
-				break;
-			}
-		}
-	}
-	return cycle;
-	return 0;
-}
 
-void printCycle() {
-	int i, j;
-	i = source1;
-	j = 0;
-	int cycle[100];
-	cycle[j++] = dest1;
-	while (i != dest1) {
-		cycle[j++] = i;
-		int k = i;
-		if (k >= trainCount) {
-			printf("Resource->%d\n", k - trainCount);
-		}
-		else {
-			printf("Train->%d\n", k);
-		}
-		i = parents[i];
-	}
-	cycle[j] = dest1;
-	i = j;
-}
+pid_t trainPid[101];
+
+void drawGraph();
+void DFS(int u, int p);
+int checkCycle();
+void printCycle();
 
 struct message
 {
@@ -331,16 +205,130 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// int w = 0;
-	// for (w = 0; w < n; w++)
-	// {
-	// 	printf("%d\n", trainPid[w]);
-	// }
-
 	getchar();
-	if (semctl(semid_sem_sync, 0, IPC_RMID) == -1)
-		printf("SEMREM error\n");
-	if (semctl(semid_dir, 0, IPC_RMID) == -1)
-		printf("SEMREM error\n");
+	// if (semctl(semid_sem_sync, 0, IPC_RMID) == -1)
+	// 	printf("SEMREM error\n");
+	// if (semctl(semid_dir, 0, IPC_RMID) == -1)
+	// 	printf("SEMREM error\n");
+	for(ll = 0 ;ll < n; ll++)
+		kill(trainPid[ll],SIGINT);
 	return 0;
+}
+
+void drawGraph()
+{
+	int i, j;
+	memset(temp, 0, sizeof(temp));
+	memset(visited, 0, sizeof(visited));
+	memset(parents, 0, sizeof(parents));
+	memset(recstack, 0, sizeof(recstack));
+	for (i = 0; i < trainCount; i++) {
+		for (j = 0; j < 4; j++) {
+			if (nodes[i][j] == 1) {
+				temp[i][j + trainCount] = 1;
+			}
+			if (nodes[i][j] == 2) {
+				temp[j + trainCount][i] = 1;
+			}
+		}
+	}
+
+	for (i = 0; i < trainCount + 4; i++) {
+		temp[i][0] = 0;
+		temp[0][i] = 0;
+	}
+}
+
+void DFS(int u, int p)
+{
+	visited[u] = 1;
+	int i, j, k;
+	countCurr++;
+	instack[u] = 1;
+	if (cycle) {
+		return ;
+	}
+	currentNodes[countCurr] = u;
+	for (i = 0; i < 75; i++) {
+		if (temp[u][i] == 1 && !visited[i] && i != p) {
+			DFS(i, u);
+		}
+		else {
+			if (cycle) {
+				return ;
+			}
+			if (visited[i] && temp[u][i] && instack[i]) {
+				int start = u;
+				int end = i;
+				printf("\nSystem Deadlocked\n");
+				int trainList[100];
+				int index1 = 0;
+				while (1) {
+					int index = currentNodes[countCurr];
+					if (index >= trainCount) {
+						// printf("Resource->%d\n", index - trainCount);
+					}
+					else {
+						trainList[index1] = index;
+						index1++;
+						// printf("Train->%d\n", index);
+					}
+					if (countCurr == 0 || currentNodes[countCurr] == end) {
+						break;
+					}
+					countCurr--;
+					cycle = 1;
+				}
+				// printf("Train list of dependecies->\n");
+				int l = 0;
+				for (l = 0; l < index1 - 1; l++) {
+					printf("Train <%d> is waiting on Train <%d> ---------> ", trainPid[trainList[l % index1] - 1], trainPid[trainList[(l + 1) % index1] - 1]);
+				}
+				printf("Train <%d> is waiting on Train <%d>\n", trainPid[trainList[l % index1] - 1], trainPid[trainList[(l + 1) % index1] - 1]);
+			}
+		}
+	}
+	instack[u] = 0;
+	countCurr--;
+}
+
+int checkCycle()
+{
+	drawGraph();
+	memset(visited, 0, sizeof(visited));
+	memset(instack, 0, sizeof(instack));
+	int i = 0;
+	for (i = 1; i <= 74; i++) {
+		if (!visited[i]) {
+			DFS(i, 0);
+			countCurr = 0;
+			if (cycle) {
+				break;
+			}
+		}
+	}
+	return cycle;
+	return 0;
+}
+
+void printCycle()
+{
+	int i, j;
+	i = source1;
+	j = 0;
+	int cycle[100];
+	cycle[j++] = dest1;
+	while (i != dest1) {
+		cycle[j++] = i;
+		int k = i;
+		if (k >= trainCount) {
+			printf("Resource->%d\n", k - trainCount);
+		}
+		else {
+			printf("Train->%d\n", k);
+		}
+		i = parents[i];
+	}
+	cycle[j] = dest1;
+	i = j;
 }

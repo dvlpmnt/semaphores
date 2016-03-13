@@ -14,56 +14,7 @@
 int trainId;
 char trainType;
 
-void updateFile(int val, int num_q) {
-	FILE *f;
-	struct sembuf waitf, signalf;
-	int semflg =  0; /* semflg to pass tosemget() */
-	waitf.sem_num = 0;
-	waitf.sem_op = -1;
-	waitf.sem_flg = 0;
-	signalf.sem_num = 0;
-	signalf.sem_op = 1;
-	signalf.sem_flg = 0;
-	int semid;
-	int nsems = 1;
-	key_t key = 1065;
-	// if ((key = ftok("matrix.txt", 'B')) == -1) {
-	// 	perror("ftok");
-	// 	exit(1);
-	// }
-	if ((semid = semget(key, nsems, semflg)) == -1) {
-		perror("semget: semget failed");
-		exit(1);
-	}
-	semop(semid, &waitf, 1);
-	FILE *ftr = fopen("matrix.txt", "r");
-	int i, j, k;
-	int graph[75][4];
-	for (i = 0; i < 75; i++) {
-		for (j = 0; j < 4; j++) {
-			fscanf(ftr, "%d", &graph[i][j]);
-		}
-	}
-
-	graph[trainId][num_q] = val;
-	int count1 = 0;
-	int count2 = 0;
-	ftr = fopen("matrix.txt", "w");
-	for (i = 0; i < 75; i++) {
-		for (j = 0; j < 4; j++) {
-			fprintf(ftr, "%d ", graph[i][j]);
-			if (graph[i][j] == 1) {
-				count1++;
-			}
-			else if (graph[i][j] == 2) {
-				count2++;
-			}
-		}
-		fprintf(ftr, "\n");
-	}
-	fclose(ftr);
-	semop(semid, &signalf, 1);
-}
+void updateFile(int val, int num_q);
 
 struct message
 {
@@ -291,4 +242,55 @@ int main(int argc, char *argv[]) {
 	}
 	// getchar();
 	return 0;
+}
+void updateFile(int val, int num_q)
+{
+	FILE *f;
+	struct sembuf waitf, signalf;
+	int semflg =  0; /* semflg to pass tosemget() */
+	waitf.sem_num = 0;
+	waitf.sem_op = -1;
+	waitf.sem_flg = 0;
+	signalf.sem_num = 0;
+	signalf.sem_op = 1;
+	signalf.sem_flg = 0;
+	int semid;
+	int nsems = 1;
+	key_t key = 1065;
+	// if ((key = ftok("matrix.txt", 'B')) == -1) {
+	// 	perror("ftok");
+	// 	exit(1);
+	// }
+	if ((semid = semget(key, nsems, semflg)) == -1) {
+		perror("semget: semget failed");
+		exit(1);
+	}
+	semop(semid, &waitf, 1);
+	FILE *ftr = fopen("matrix.txt", "r");
+	int i, j, k;
+	int graph[75][4];
+	for (i = 0; i < 75; i++) {
+		for (j = 0; j < 4; j++) {
+			fscanf(ftr, "%d", &graph[i][j]);
+		}
+	}
+
+	graph[trainId][num_q] = val;
+	int count1 = 0;
+	int count2 = 0;
+	ftr = fopen("matrix.txt", "w");
+	for (i = 0; i < 75; i++) {
+		for (j = 0; j < 4; j++) {
+			fprintf(ftr, "%d ", graph[i][j]);
+			if (graph[i][j] == 1) {
+				count1++;
+			}
+			else if (graph[i][j] == 2) {
+				count2++;
+			}
+		}
+		fprintf(ftr, "\n");
+	}
+	fclose(ftr);
+	semop(semid, &signalf, 1);
 }

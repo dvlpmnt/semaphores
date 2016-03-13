@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
 			fclose(fp);
 		}
 
-		// sleep(20);	//so that user can observe the deadlock
+		getchar();
 		
 		for(i=0;i<10;i++)
 			kill(procs[i], SIGINT);

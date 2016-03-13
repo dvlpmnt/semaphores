@@ -1,7 +1,10 @@
-all: reset train manager
+all: ipcrm reset train manager
 
 train:
 	gcc train.c -o t
+
+ipcrm:
+	ipcrm -a
 
 reset:
 	reset
