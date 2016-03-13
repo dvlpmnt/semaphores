@@ -18,3 +18,5 @@ Probability	InsertCount	RemoveCount
 	.80		  1697		  1689
 	.85		  5387		  5378
 	.90		  5713		  5702
+
+	.20		   108		    94

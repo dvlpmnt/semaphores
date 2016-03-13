@@ -34,9 +34,9 @@ void read_graph(int semid_file);  // reads graph and check whether there exists 
 
 int main(int argc, char *argv[])
 {
-	if( !(argc==3 && strcmp(argv[1],"with") == 0) && !( strcmp(argv[1],"without") == 0 && (argc==3 || argc==2)) )
+	if( argc == 1 || !(argc==3 && strcmp(argv[1],"with") == 0) && !( strcmp(argv[1],"without") == 0 && (argc==3 || argc==2)) )
 	{
-		printf("incorrect arguments!\n\ncommand : ./m <with/without> <probabiliy>\n");
+		printf("\nincorrect arguments!\n\ncommand : ./m <with/without> <probabiliy>\n\n");
 		return 1;
 	}
 
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 		while(isCyclic == 0)
 		{
 			sleep(2);
-			printf("E0 %d,E1 %d, F0 %d, F1 %d\n", semctl(semid, EMPTY0, GETVAL, 0), semctl(semid, EMPTY1, GETVAL, 0), semctl(semid, FULL0, GETVAL, 0), semctl(semid, FULL1, GETVAL, 0));
+			// printf("E0 %d,E1 %d, F0 %d, F1 %d\n", semctl(semid, EMPTY0, GETVAL, 0), semctl(semid, EMPTY1, GETVAL, 0), semctl(semid, FULL0, GETVAL, 0), semctl(semid, FULL1, GETVAL, 0));
 			read_graph(semid); // reads graph and check whether there exists a cycle or not
 		}
 		if( strcmp(argv[1],"with") == 0 )
@@ -184,7 +184,7 @@ void read_graph(int semid)  // reads graph and check whether there exists a cycl
 	semop(semid, &sop, 1);
 	// printf("locked matrix.txt\n");
 	FILE *fp = fopen("matrix.txt", "r");
-	printf("\n--------------------Graph--------------------\n\n");
+	printf("\n--------------------MATRIX--------------------\n\n");
 	// printf("value read\n");
 	for (j = 0; j < 2; j++)
 	{
@@ -213,7 +213,7 @@ void read_graph(int semid)  // reads graph and check whether there exists a cycl
 		printf("\n\n");
 	}
 	// printf("released matrix.txt\n");
-	printf("\n----------------------------------------------\n");
+	printf("----------------------------------------------\n");
 
 	for (j = 0; j < 2 && b == -1; j++)
 	{

@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
 	if(strcmp(argv[2],"with") == 0)
 	{
 		isDeadlock = 1;
-		probability = atoi(argv[3]);
 	}
-	
+	if(argc == 4)
+		probability = atoi(argv[3]);	
 	consumer_num = atoi(argv[1]);
 	int msgid, msgid_q1, msgid_q2, temp1;
 	int curr, curr_sema, next, next_sema, status;
